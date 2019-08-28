@@ -34,4 +34,22 @@ def calibrate(path, prefix, image_format, size, width = 7, height = 6):
 			image = cv2.drawChessboardCorners(img, (width, height), corners_, ret)
 
 	ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
+
 	return [ret, mtx, dist, rvecs, tvecs]	
+
+def save_coefficients():
+	"""
+	"""
+	cv_file = cv2.FileStorage(path, cv2.FILE_STORAGE_WRITE)
+	cv_file.write('K', mtx)
+	cv_file.write('D', dist)
+	cv_file.release()
+
+def load_coefficients():
+	"""
+	"""
+	cv_file = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
+	camera_matrix = cv_file.getNode('K').mat()
+	dist_matrix = cv_file.getNode('D').mat()
+	cv_file.release()
+	return [camera_matrix, dist_matrix]
