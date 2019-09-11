@@ -14,6 +14,8 @@ import cv2
 import cv2.aruco as aruco
 from calibration_store import load_coefficients
 from average_center_points import calculate_avg
+from draw import draw
+
 
 cap = cv2.VideoCapture(0)
 
@@ -37,29 +39,23 @@ def aruco_detector(matrix_coefficients, distortion_coefficients):
         print("TEST")
         print("ids: ", ids)
         
-        
-        px = 75
-        x_coo, y_coo, c_x, c_y = get_coordinates(corners, ids, frame)       
+        px1 = 70 # Pixel height distance from the corners of ArUco
+        px2 = 110 # Pixel height distance from the corners of ArUco
+        """
+        # These variables will be set for marking on video according to ship specifications.
+        px1_h = 70 # Pixel height distance from the corners of ArUco
+        px1_w = 210 # Pixel width distance from the center of ArUco
+        px2_h = 110 # Pixel height distance from the center of ArUco
+        px2_w = 330 # Pixel width distance from the center of ArUco
+        """
+
+        c_x, c_y, x_coo, y_coo = get_coordinates(corners, ids, frame)       
         gsd, distance = get_gsd(px = 75, height = 125, fov = 0.87, pix_w = 895)
-        #gsd = 0.13397129186
-        
-        print("gsd: ", gsd)
+        #gsd = 0.13397129186        
 
         # Average center points of 3 ArUco markers
         av_cx, av_cy = calculate_avg(ids, c_x, c_y)
-        cv2.putText(frame, "X", (int(av_cx), int(av_cy)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,0,200), 1)
-        
-        
-        cv2.line(frame,(int(x_coo["x0"]), int(y_coo["y0"])-px),(int(x_coo["x1"]), int(y_coo["y1"])-px),(25,25,200),5)
-        cv2.line(frame,(int(x_coo["x0"])-px, int(y_coo["y0"])),(int(x_coo["x3"])-px, int(y_coo["y3"])),(25,25,200),5)
-        cv2.line(frame,(int(x_coo["x1"])+px, int(y_coo["y1"])),(int(x_coo["x2"])+px, int(y_coo["y2"])),(25,25,200),5)
-        cv2.line(frame,(int(x_coo["x2"]), int(y_coo["y2"])+px),(int(x_coo["x3"]), int(y_coo["y3"])+px),(25,25,200),5)
-        
-        cv2.putText(frame, 'Side 1 is' + str(distance) + "m", (int((x_coo["x0"]+x_coo["x1"])/2),280), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,200,200), 2)
-        cv2.putText(frame, 'Back', (int((x_coo["x0"]+x_coo["x3"])/2), int((y_coo["y0"]+y_coo["y3"])/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,200,200), 2)
-        cv2.putText(frame, 'Front', (int((x_coo["x1"]+x_coo["x2"])/2), int((y_coo["y1"]+y_coo["y3"])/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,200,200), 2)
-        cv2.putText(frame, 'Side 2', (int((x_coo["x2"]+x_coo["x3"])/2), int((y_coo["y2"]+y_coo["y3"])/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,200,200), 2)
-        
+        draw(frame, px1, px2, av_cx, av_cy, c_x, c_y, x_coo, y_coo)
 
         if np.all(ids is not None):  # If there are markers found by detector
             for i in range(0, len(ids)):  # Iterate in markers
@@ -111,7 +107,7 @@ def get_coordinates(corners, ids, frame):
             #print(y_coo)
             index = index + 1 
         
-    return x_coo, y_coo, c_x, c_y
+    return c_x, c_y, x_coo, y_coo
 
         
 def get_gsd(px, height, fov, pix_w = 895):
