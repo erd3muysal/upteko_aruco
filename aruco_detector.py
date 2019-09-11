@@ -13,7 +13,7 @@ import time
 import cv2
 import cv2.aruco as aruco
 from calibration_store import load_coefficients
-from average_center_points import avg_center_points
+from average_center_points import calculate_avg
 
 cap = cv2.VideoCapture(0)
 
@@ -46,7 +46,7 @@ def aruco_detector(matrix_coefficients, distortion_coefficients):
         print("gsd: ", gsd)
 
         # Average center points of 3 ArUco markers
-        av_cx, av_cy = avg_center_points(ids, c_x, c_y)
+        av_cx, av_cy = calculate_avg(ids, c_x, c_y)
         cv2.putText(frame, "X", (int(av_cx), int(av_cy)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,0,200), 1)
         
         
