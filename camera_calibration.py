@@ -1,55 +1,72 @@
 import numpy as np
 import cv2
 import glob
+import argparse
+from calibration_store import save_coefficients
 
-def calibrate(path, prefix, image_format, size, width = 7, height = 6):
-	# Termination criteria
-	criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-	# Prepare object points like (0, 0, 0), (1, 0, 0), (2, 0, 0) ... (6, 5, 0)
-	obj_p = np.zeros((height*weight, 3), np.float)
-	obj_p[:, :2] = np.mgrid[0:width, 0:height].T.reshape(-1, 2)
+# termination criteria
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-	#Arrays to stroe object points and image point from all the images.
-	obj_points = [] # 3D points in real world space
-	img_points = [] # 2D points in image plane
 
-	images = glob.glob('*.jpg')
+def calibrate(dirpath, prefix, image_format, square_size, width=9, height=6):
+    """ Apply camera calibration operation for images in the given directory path. """
+    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(8,6,0)
+    objp = np.zeros((height*width, 3), np.float32)
+    objp[:, :2] = np.mgrid[0:width, 0:height].T.reshape(-1, 2)
 
-	for image in images:
-		img = cv2.imread(image)
-	 	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    objp = objp * square_size  # Create real world coords. Use your metric.
 
-		# Find the chess board corners
-		ret, corners = cv2.findChessboardCorners(gray, (width, height), None)
+    # Arrays to store object points and image points from all the images.
+    objpoints = []  # 3d point in real world space
+    imgpoints = []  # 2d points in image plane.
 
-		# If found, add object points, image points (after refining them)
-		if ret == True
-			obj_points.append(obj_p)
-			
-			corners_ = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-			img_points.append(corners)
+    # Directory path correction. Remove the last character if it is '/'
+    if dirpath[-1:] == '/':
+        dirpath = dirpath[:-1]
 
-			# Draw and display the corners
-			image = cv2.drawChessboardCorners(img, (width, height), corners_, ret)
+    # Get the images
+    images = glob.glob(dirpath+'/' + prefix + '*.' + image_format)
 
-	ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
+    # Iterate through the pairs and find chessboard corners. Add them to arrays
+    # If openCV can't find the corners in an image, we discard the image.
+    for fname in images:
+        img = cv2.imread(fname)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-	return [ret, mtx, dist, rvecs, tvecs]	
+        # Find the chess board corners
+        ret, corners = cv2.findChessboardCorners(gray, (width, height), None)
 
-def save_coefficients():
-	"""
-	"""
-	cv_file = cv2.FileStorage(path, cv2.FILE_STORAGE_WRITE)
-	cv_file.write('K', mtx)
-	cv_file.write('D', dist)
-	cv_file.release()
+        # If found, add object points, image points (after refining them)
+        if ret:
+            objpoints.append(objp)
 
-def load_coefficients():
-	"""
-	"""
-	cv_file = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
-	intrinsic = cv_file.getNode('K').mat() # Camera matrix
-	extrinsic = cv_file.getNode('D').mat() # Distortion matrix
-	cv_file.release()
-	return [intrinsic, extrinsic]
+            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+            imgpoints.append(corners2)
+
+            # Draw and display the corners
+            # Show the image to see if pattern is found ! imshow function.
+            img = cv2.drawChessboardCorners(img, (width, height), corners2, ret)
+
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
+    return [ret, mtx, dist, rvecs, tvecs]
+
+
+if __name__ == '__main__':
+    # Check the help parameters to understand arguments
+    parser = argparse.ArgumentParser(description='Camera calibration')
+    parser.add_argument('--image_dir', type=str, required=True, help='image directory path')
+    parser.add_argument('--image_format', type=str, required=True,  help='image format, png/jpg')
+    parser.add_argument('--prefix', type=str, required=True, help='image prefix')
+    parser.add_argument('--square_size', type=float, required=False, help='chessboard square size')
+    parser.add_argument('--width', type=int, required=False, help='chessboard width size, default is 9')
+    parser.add_argument('--height', type=int, required=False, help='chessboard height size, default is 6')
+    parser.add_argument('--save_file', type=str, required=True, help='YML file to save calibration matrices')
+
+    args = parser.parse_args()
+
+    # Call the calibraton and save as file. RMS is the error rate, it is better if rms is less than 0.2
+    ret, mtx, dist, rvecs, tvecs = calibrate(args.image_dir, args.prefix, args.image_format, args.square_size, args.width, args.height)
+    save_coefficients(mtx, dist, args.save_file)
+    print("Calibration is finished. RMS: ", ret)
