@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 1 10:22:46 2019
+Created on Tue Sep 1 12:22:46 2019
 
 @author: R. Erdem Uysal
 company: Upteko
@@ -12,18 +12,23 @@ import math
 import time
 import cv2
 import cv2.aruco as aruco
+
+# Import other Python modules
 from calibration_store import load_coefficients
 from average_center_points import calculate_avg
 from draw import draw
 
 
-cap = cv2.VideoCapture(0)
-
+cap = cv2.VideoCapture("50_meters.mp4")
+if (cap.isOpened()== False): 
+  print("Error opening video stream or file")
+  
 def aruco_detector(matrix_coefficients, distortion_coefficients):
     while True:
         ret, frame = cap.read()
-        frame = cv2.imread('raw.png')
-        frame = cv2.resize(frame, (1080, 720)) # For a spesific resize operation
+        #frame = cv2.imread('ship.png')
+        #frame = cv2.resize(frame, (1080, 720)) # For a spesific resize operation
+        #frame = cv2.resize(frame, (720, 480)) # For a spesific resize operation
 
         # Operations on the frame come here
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # Change grayscale
@@ -35,9 +40,10 @@ def aruco_detector(matrix_coefficients, distortion_coefficients):
                                                                 cameraMatrix=matrix_coefficients,
                                                                 distCoeff=distortion_coefficients)
         
-        
-        print("TEST")
-        print("ids: ", ids)
+
+        height, width, channels = frame.shape
+        print("Height: " + str(height) + " ___ " + "Width: " + str(width))
+        print("Length of detected markers ", ids)
         
         px1 = 70 # Pixel height distance from the corners of ArUco
         px2 = 110 # Pixel height distance from the corners of ArUco
@@ -48,28 +54,32 @@ def aruco_detector(matrix_coefficients, distortion_coefficients):
         px2_h = 110 # Pixel height distance from the center of ArUco
         px2_w = 330 # Pixel width distance from the center of ArUco
         """
+        
+        try:
+            c_x, c_y, x_coo, y_coo = get_coordinates(corners, ids, frame)       
+            gsd, distance = get_gsd(px = 45, height = 50, fov = 2.8, pix_w = 1280)
+    
+            # Average center points of 3 ArUco markers
+            av_cx, av_cy = calculate_avg(ids, c_x, c_y)
+            draw(frame, px1, px2, av_cx, av_cy, c_x, c_y, x_coo, y_coo)
+    
+            if np.all(ids is not None):  # If there are markers found by detector
+                for i in range(0, len(ids)):  # Iterate in markers
+                    # Estimate pose of each marker and return the values rvec and tvec---different from camera coefficients
+                    rvec, tvec, markerPoints = aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients,
+                                                                               distortion_coefficients)
+                    (rvec - tvec).any()  # get rid of that nasty numpy value array error
+                    aruco.drawDetectedMarkers(frame, corners)  # Draw A square around the markers
+                    aruco.drawAxis(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, 0.01)  # Draw axis
+                    
+                    cv2.putText(frame, "id"+str(ids[i]), (int(c_x), int(c_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,0,200), 1)
 
-        c_x, c_y, x_coo, y_coo = get_coordinates(corners, ids, frame)       
-        gsd, distance = get_gsd(px = 75, height = 125, fov = 0.87, pix_w = 895)
-        #gsd = 0.13397129186        
-
-        # Average center points of 3 ArUco markers
-        av_cx, av_cy = calculate_avg(ids, c_x, c_y)
-        draw(frame, px1, px2, av_cx, av_cy, c_x, c_y, x_coo, y_coo)
-
-        if np.all(ids is not None):  # If there are markers found by detector
-            for i in range(0, len(ids)):  # Iterate in markers
-                # Estimate pose of each marker and return the values rvec and tvec---different from camera coefficients
-                rvec, tvec, markerPoints = aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients,
-                                                                           distortion_coefficients)
-                (rvec - tvec).any()  # get rid of that nasty numpy value array error
-                aruco.drawDetectedMarkers(frame, corners)  # Draw A square around the markers
-                aruco.drawAxis(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, 0.01)  # Draw axis
-                
-                c_x = (corners[i][0][0][0] + corners[i][0][1][0] + corners[i][0][2][0] + corners[i][0][3][0]) / 4 # X coordinate of marker's center
-                c_y = (corners[i][0][0][1] + corners[i][0][1][1] + corners[i][0][2][1] + corners[i][0][3][1]) / 4 # Y coordinate of marker's center
-                cv2.putText(frame, "id"+str(ids[i]), (int(c_x), int(c_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (25,0,200), 1)
-
+        except:
+            if ids is None or len(ids) == 0:
+                print("******************************************************")
+                print("*************** Marker Detection Failed **************")
+                print("******************************************************")
+            
         # Display the resulting frame
         cv2.imshow('frame', frame)
         # Wait 3 mili seconds for an interaction. Check the key and do the corresponding job.
@@ -110,16 +120,17 @@ def get_coordinates(corners, ids, frame):
     return c_x, c_y, x_coo, y_coo
 
         
-def get_gsd(px, height, fov, pix_w = 895):
+def get_gsd(px, height, fov = 2.8, pix_w = 1280):
     """ 
     Calculation of ground sampling distance
     """
     gsd = (2 * height * math.tan(fov / 2)) / pix_w
+    gsd = 0.06        
     
-    print("\nGround Sampling Distance: ", gsd)
+    print("\nGround Sampling Distance: %.2f m/px" %gsd)
     print("------------------------------------------------------")
-    distance = int(px * gsd)
-    print("Distance from marker to Side 1: ", distance)
+    distance = (px * gsd)
+    print("Distance from marker to Side 1: %.2f" %distance)
     print("------------------------------------------------------\n")
         
     return gsd, distance
