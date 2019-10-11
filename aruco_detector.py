@@ -266,6 +266,7 @@ if __name__ == '__main__':
     parser.add_argument('--vesselWidth', type=int, required=False, help="Vessel's width in m")
 
     args = parser.parse_args()
+    # Do not remove here!
     #marker = Marker(args.markerSize, args.vesselLength, args.vesselWidth)
     marker = Marker()
     marker.arucoDetector()
