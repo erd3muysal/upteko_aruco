@@ -12,20 +12,12 @@ import glob
 import argparse
 from calibration_store import save_coefficients
 
-<<<<<<< HEAD
 class Camera(object):
     def __init__(self, filePath = "/data/Fixed", imgName = "Image", imgFormat = "png", saveFile = "cam.YML", squareSize = 0.015, width = 9, height = 6):
         self.filePath = filePath
         self.imgName = imgName
         self.imgFormat = imgFormat
         self.saveFile = saveFile
-=======
-class Calibration(object):
-    def __init__(self, filePath, imgName, imgFormat, squareSize = 0.015, width = 9, height = 6):
-        self.filePath = filePath
-        self.imgName = imgName
-        self.imgFormat = imgFormat
->>>>>>> 17468482624b47b71e544229f55310cd9d892513
         self.squareSize = squareSize
         self.width = width
         self.height = height
@@ -36,11 +28,7 @@ class Calibration(object):
         Apply camera calibration operation for images in the given directory path.
 
         """
-<<<<<<< HEAD
         # Prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(8,6,0)
-=======
-        # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(8,6,0)
->>>>>>> 17468482624b47b71e544229f55310cd9d892513
         objp = np.zeros((self.height*self.width, 3), np.float32)
         objp[:, :2] = np.mgrid[0:self.width, 0:self.height].T.reshape(-1, 2)
         objp = objp * self.squareSize  # Create real world coords. Use your metric.
@@ -77,7 +65,6 @@ class Calibration(object):
                 img = cv2.drawChessboardCorners(img, (self.width, self.height), corners2, retval)
     
         retval, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-<<<<<<< HEAD
 
         return [retval, mtx, dist, rvecs, tvecs]
 
@@ -86,36 +73,17 @@ class Calibration(object):
         Save the camera matrix and the distortion coefficients to given path/file.
         """
         cv_file = cv2.FileStorage(saveFile, cv2.FILE_STORAGE_WRITE)
-=======
-        
-        return [retval, mtx, dist, rvecs, tvecs]
-
-    def save_coefficients(self, path):
-        """ 
-        Save the camera matrix and the distortion coefficients to given path/file.
-        """
-        cv_file = cv2.FileStorage(path, cv2.FILE_STORAGE_WRITE)
->>>>>>> 17468482624b47b71e544229f55310cd9d892513
         cv_file.write("K", self.mtx)
         cv_file.write("D", self.dist)
         # Note you *release* you don't close() a FileStorage object
         cv_file.release()
-<<<<<<< HEAD
 
     def loadCoefficients(self, saveFile):
-=======
-        
-    def load_coefficients(self, path):
->>>>>>> 17468482624b47b71e544229f55310cd9d892513
         """ 
         Loads camera matrix and distortion coefficients. 
         """
         # FILE_STORAGE_READ
-<<<<<<< HEAD
         cv_file = cv2.FileStorage(saveFile, cv2.FILE_STORAGE_READ)
-=======
-        cv_file = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
->>>>>>> 17468482624b47b71e544229f55310cd9d892513
     
         # Note we also have to specify the type to retrieve other wise we only get a
         # FileNode object back instead of a matrix
@@ -129,7 +97,6 @@ class Calibration(object):
 if __name__ == '__main__':
     # Check the help parameters to understand arguments
     parser = argparse.ArgumentParser(description='Camera Calibration')
-<<<<<<< HEAD
     parser.add_argument('--filePath', type=str, required=False, help="Image directory path")
     parser.add_argument('--imgName', type=str, required=False, help="Image name")
     parser.add_argument('--imgFormat', type=str, required=False,  help="Image format, png/jpg")
@@ -144,20 +111,4 @@ if __name__ == '__main__':
     # Call the calibraton and save as file. RMS is the error rate, it is better if rms is less than 0.2.
     retval, mtx, dist, rvecs, tvecs = cam.calibrate()
     saveCoefficients(args.saveFile)
-=======
-    parser.add_argument('--filePath', type=str, required=True, help="Image directory path")
-    parser.add_argument('--imgName', type=str, required=True, help="Image name")
-    parser.add_argument('--imgFormat', type=str, required=True,  help="Image format, png/jpg")
-    parser.add_argument('--squareSize', type=float, required=False, help="Chessboard square size")
-    parser.add_argument('--width', type=int, required=False, help="Chessboard width size, default is 9")
-    parser.add_argument('--height', type=int, required=False, help="Chessboard height size, default is 6")
-    parser.add_argument('--saveFile', type=str, required=True, help="YML file to save calibration matrices")
-
-    args = parser.parse_args()
-    camera = Calibration(args.filePath, args.imgName, args.imgFormat, args.squareSize, args.width, args.height)
-    
-    # Call the calibraton and save as file. RMS is the error rate, it is better if rms is less than 0.2.
-    retval, mtx, dist, rvecs, tvecs = camera.calibrate()
-    save_coefficients(mtx, dist, args.saveFile)
->>>>>>> 17468482624b47b71e544229f55310cd9d892513
     print("Calibration is successful.\n RMS: ", retval)
