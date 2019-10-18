@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Tue Sep 3 12:22:46 2019
@@ -29,7 +30,7 @@ class Marker(object):
         
     def arucoDetector(self):
         try:
-             cap = cv2.VideoCapture("20_meters.mp4")
+             cap = cv2.VideoCapture("50_meters.MP4")
         except (cap.isOpened() == False): 
             print("Error opening video stream or file")
             sys.exit()
@@ -82,7 +83,6 @@ class Marker(object):
                             alt_gsd = self.altGSD(x_coo, y_coo)
                             
                             # Call draw module  
-                            frame = self.drawLine(frame, ids, gsd, av_cx, av_cy, c_x, c_y, x_coo, y_coo, self.markerSize, self.vesselLength, self.vesselWidth, d4 = 5)
 
                         else:
                             print("Unapropriate marker")
@@ -93,7 +93,9 @@ class Marker(object):
                     print("******************************************************")
                     print("*************** Marker Detection Failed **************")
                     print("******************************************************")
-    
+            
+            frame = self.drawLine(frame, ids, gsd, av_cx, av_cy, c_x, c_y, x_coo, y_coo, self.markerSize, self.vesselLength, self.vesselWidth, d4 = 5)
+
             # Find OpenCV version
             (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
              
@@ -120,7 +122,7 @@ class Marker(object):
         # When everything is done, release the capture
         cap.release()
         cv2.destroyAllWindows()
-    
+
     def getCoordinates(self, corners, ids, frame):
         """
         Getting coordinates of each aruco marker's corner
@@ -145,7 +147,7 @@ class Marker(object):
                 #print(x_coo)
                 y_coo["y{0}".format(index)] = coo[1] # coo[1] represents the Y axis
                 #print(y_coo)
-                index = index + 1 
+                index = index + 1
     
         return c_x, c_y, x_coo, y_coo
     
@@ -210,14 +212,16 @@ class Marker(object):
         output = frame.copy()
     
         font = cv2.FONT_HERSHEY_SIMPLEX
-        alpha = 0.7 # Transparency value
+        alpha = 0.90 # Transparency value
         beta = 10  # Contrast value   
         thickness = 2
+        thickness2 = 1
         
         d1 = (self.vesselLength - self.markerSize) /2
         d2 = (self.vesselWidth - self.markerSize) /3
         d3 = (2*(self.vesselWidth - self.markerSize)) /3
-    
+        d4 = d4
+
         print("D1:", d1)
         print("D2:", d2)
         print("D3:", d3)
@@ -231,29 +235,52 @@ class Marker(object):
         # Drawing a cross to the center point of the average of all ArUco markers.
         # cv2.putText(frame, "X", (int(av_cx), int(av_cy)), font, 0.75, (25,0,200), 1)
     
-        # Printing labels of the sides belongs to ship    
+        # Printing labels of the sides belongs to ship  
+        """   
         cv2.putText(overlay, 'Side 1', (int(c_x["c_x0"]), int(c_y["c_y0"])-(px1)), font, 0.75, (0,255,0), thickness)
         cv2.putText(overlay, 'Back', (int(c_x["c_x0"])-(px1), int(c_y["c_y0"])), font, 0.75, (0,255,0), thickness)
         cv2.putText(overlay, 'Front', (int(c_x["c_x0"])+(px1), int(c_y["c_y0"])), font, 0.75, (0,255,0), thickness)
         cv2.putText(overlay, 'Side 2', (int(c_x["c_x0"]), int(c_y["c_y0"])+(px1)), font, 0.75, (0,255,0), thickness)
-        
-        # Drawing first lines on 1st marker --> 1st one: 10 meter 
+        """
+        #1 Drawing first lines on marker --> 1st one: 10 meter 
         cv2.line(overlay, (int(x_coo["x0"]), int(y_coo["y0"])-px1), (int(x_coo["x1"]), int(y_coo["y1"])-px1), (25,25,200),thickness)
+        cv2.putText(overlay, ("D1:"+str(d1)+"m \n Side 1"), (int(x_coo["x0"]), int(y_coo["y0"])-px1), font, 0.75, (0,255,0), thickness2)
+
         cv2.line(overlay, (int(x_coo["x0"])+px3, int(y_coo["y0"])), (int(x_coo["x3"])+px3, int(y_coo["y3"])), (25,25,200),thickness)
+        cv2.putText(overlay, ("D3:"+str(d3)+"m"), (int(x_coo["x0"])+px3, int(y_coo["y0"])), font, 0.75, (0,255,0), thickness2)
+        
         cv2.line(overlay, (int(x_coo["x1"])-px2, int(y_coo["y1"])), (int(x_coo["x2"])-px2, int(y_coo["y2"])), (25,25,200),thickness)
+        cv2.putText(overlay, ("D2:"+str(d2)+"m"), (int(x_coo["x1"])-px2, int(y_coo["y1"])), font, 0.75, (0,255,0), thickness2)
+        
         cv2.line(overlay, (int(x_coo["x2"]), int(y_coo["y2"])+px1), (int(x_coo["x3"]), int(y_coo["y3"])+px1), (25,25,200),thickness)
+        cv2.putText(overlay, ("D1:"+str(d1)+"m"), (int(x_coo["x2"]), int(y_coo["y2"])+px1), font, 0.75, (0,255,0), thickness2)
+
+
+        #2 Drawing second lines on marker--> 2nd one: 20 meter
+        cv2.line(overlay, (int(x_coo["x0"]), int(y_coo["y0"])-(px1+px4)),(int(x_coo["x1"]), int(y_coo["y1"])-(px1+px4)),(25,25,200),thickness)
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x0"]), int(y_coo["y0"])-(px1+px4)), font, 0.75, (0,255,0), thickness2)
         
-        # Drawing second lines on 1st marker--> 2nd one: 20 meter
-        cv2.line(overlay,(int(x_coo["x0"]), int(y_coo["y0"])-(px1+px4)),(int(x_coo["x1"]), int(y_coo["y1"])-(px1+px4)),(25,25,200),thickness)
-        cv2.line(overlay,(int(x_coo["x0"])+(px3+px4), int(y_coo["y0"])),(int(x_coo["x3"])+(px3+px4), int(y_coo["y3"])),(25,25,200),thickness)
-        cv2.line(overlay,(int(x_coo["x1"])-(px2+px4), int(y_coo["y1"])),(int(x_coo["x2"])-(px2+px4), int(y_coo["y2"])),(25,25,200),thickness)
-        cv2.line(overlay,(int(x_coo["x2"]), int(y_coo["y2"])+(px1+px4)),(int(x_coo["x3"]), int(y_coo["y3"])+(px1+px4)),(25,25,200),thickness)    
-        
-        # Drawing second lines on 1st marker--> 2nd one: 40 meter
-        cv2.line(overlay,(int(x_coo["x0"]), int(y_coo["y0"])-(2*px4+px1)),(int(x_coo["x1"]), int(y_coo["y1"])-(2*px4+px1)),(25,25,200),thickness)
-        cv2.line(overlay,(int(x_coo["x0"])+(2*px4+px3), int(y_coo["y0"])),(int(x_coo["x3"])+(2*px4+px3), int(y_coo["y3"])),(25,25,200),thickness)
-        cv2.line(overlay,(int(x_coo["x1"])-(2*px4+px2), int(y_coo["y1"])),(int(x_coo["x2"])-(2*px4+px2), int(y_coo["y2"])),(25,25,200),thickness)
-        cv2.line(overlay,(int(x_coo["x2"]), int(y_coo["y2"])+(2*px4+px1)),(int(x_coo["x3"]), int(y_coo["y3"])+(2*px4+px1)),(25,25,200),thickness)    
+        cv2.line(overlay, (int(x_coo["x0"])+(px3+px4), int(y_coo["y0"])),(int(x_coo["x3"])+(px3+px4), int(y_coo["y3"])),(25,25,200),thickness)
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x0"])+(px3+px4), int(y_coo["y0"])), font, 0.75, (0,255,0), thickness2)
+    
+        cv2.line(overlay, (int(x_coo["x1"])-(px2+px4), int(y_coo["y1"])),(int(x_coo["x2"])-(px2+px4), int(y_coo["y2"])),(25,25,200),thickness)
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x1"])-(px2+px4), int(y_coo["y1"])), font, 0.75, (0,255,0), thickness2)
+
+        cv2.line(overlay, (int(x_coo["x2"]), int(y_coo["y2"])+(px1+px4)),(int(x_coo["x3"]), int(y_coo["y3"])+(px1+px4)),(25,25,200),thickness)    
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x2"]), int(y_coo["y2"])+(px1+px4)), font, 0.75, (0,255,0), thickness2)
+
+        #3 Drawing third lines on marker--> 2nd one: 40 meter
+        cv2.line(overlay, (int(x_coo["x0"]), int(y_coo["y0"])-(2*px4+px1)),(int(x_coo["x1"]), int(y_coo["y1"])-(2*px4+px1)),(25,25,200),thickness)
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x0"]), int(y_coo["y0"])-(2*px4+px1)), font, 0.75, (0,255,0), thickness2)
+
+        cv2.line(overlay, (int(x_coo["x0"])+(2*px4+px3), int(y_coo["y0"])),(int(x_coo["x3"])+(2*px4+px3), int(y_coo["y3"])),(25,25,200),thickness)
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x0"])+(2*px4+px3), int(y_coo["y0"])), font, 0.75, (0,255,0), thickness2)
+
+        cv2.line(overlay, (int(x_coo["x1"])-(2*px4+px2), int(y_coo["y1"])),(int(x_coo["x2"])-(2*px4+px2), int(y_coo["y2"])),(25,25,200),thickness)
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x1"])-(2*px4+px2), int(y_coo["y1"])), font, 0.75, (0,255,0), thickness2)
+
+        cv2.line(overlay, (int(x_coo["x2"]), int(y_coo["y2"])+(2*px4+px1)),(int(x_coo["x3"]), int(y_coo["y3"])+(2*px4+px1)),(25,25,200),thickness)    
+        cv2.putText(overlay, ("D4:"+str(d4)+"m"), (int(x_coo["x2"]), int(y_coo["y2"])+(px1+px4)), font, 0.75, (0,255,0), thickness2)
     
         frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, beta)
     
